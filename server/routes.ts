@@ -112,8 +112,8 @@ export async function registerRoutes(
   });
 
   // Dashboard: get all pages for a reading (organizer view)
-  app.get("/api/readings/:slug/pages", (req, res) => {
-    const reading = storage.getReadingBySlug(req.params.slug);
+  app.get("/api/readings/:slug/pages", async (req, res) => {
+    const reading = await storage.getReadingBySlug("default");
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
@@ -121,6 +121,17 @@ export async function registerRoutes(
     const stats = storage.getReadingStats(reading.id);
     res.json({ reading, pages: allPages, stats });
   });
+const existing = await storage.getReadingBySlug("default");
 
+if (!existing) {
+  console.log("Creating default reading...");
+
+  await storage.createReading({
+    slug: "default",
+    name: "קריאה ראשונה",
+  });
+
+  console.log("Default reading created");
+}
   return httpServer;
 }
