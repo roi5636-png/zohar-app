@@ -113,7 +113,7 @@ export async function registerRoutes(
 
   // Dashboard: get all pages for a reading (organizer view)
   app.get("/api/readings/:slug/pages", async (req, res) => {
-    const reading = await storage.getReadingBySlug("default");
+    const reading = storage.getReadingBySlug("default");
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
