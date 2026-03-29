@@ -121,12 +121,12 @@ export async function registerRoutes(
     const stats = storage.getReadingStats(reading.id);
     res.json({ reading, pages: allPages, stats });
   });
-const existing = await storage.getReadingBySlug("default");
+const existing = storage.getReadingBySlug("default");
 
 if (!existing) {
   console.log("Creating default reading...");
 
-  await storage.createReading({
+  storage.createReading({
     slug: "default",
     name: "קריאה ראשונה",
   });
