@@ -9,65 +9,75 @@ export const client = postgres(connectionString);
 export const db = drizzle(client);
 
 export interface IStorage {
-  createReading(reading: InsertReading & { totalPages: number }): Reading;
-  getReadingBySlug(slug: string): Reading | undefined;
-  getReadingById(id: number): Reading | undefined;
-  createPages(readingPages: InsertPage[]): void;
-  getPagesByReadingId(readingId: number): Page[];
-  getNextAvailablePage(readingId: number): Page | undefined;
-  markPageAsRead(pageId: number, readerName: string): Page | undefined;
-  getReadingStats(readingId: number): { total: number; read: number };
+  createReading(reading: InsertReading & { totalPages: number }): Promise<Reading>;
+  getReadingBySlug(slug: string): Promise<Reading | undefined>;
+  getReadingById(id: number): Promise<Reading | undefined>;
+  createPages(readingPages: InsertPage[]): Promise<void>;
+  getPagesByReadingId(readingId: number): Promise<Page[]>;
+  getNextAvailablePage(readingId: number): Promise<Page | undefined>;
+  markPageAsRead(pageId: number, readerName: string): Promise<Page | undefined>;
+  getReadingStats(readingId: number): Promise<{ total: number; read: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
-  createReading(reading: InsertReading & { totalPages: number }): Reading {
-    return db.insert(readings).values({
+
+  async createReading(reading: InsertReading & { totalPages: number }): Promise<Reading> {
+    const res = await db.insert(readings).values({
       slug: reading.slug,
       title: reading.title,
       organizerName: reading.organizerName,
       totalPages: reading.totalPages,
-    }).returning().get();
+    }).returning();
+
+    return res[0];
   }
 
-  getReadingBySlug(slug: string): Reading | undefined {
-    return db.select().from(readings).where(eq(readings.slug, slug)).get();
+  async getReadingBySlug(slug: string): Promise<Reading | undefined> {
+    const res = await db.select().from(readings).where(eq(readings.slug, slug));
+    return res[0];
   }
 
-  getReadingById(id: number): Reading | undefined {
-    return db.select().from(readings).where(eq(readings.id, id)).get();
+  async getReadingById(id: number): Promise<Reading | undefined> {
+    const res = await db.select().from(readings).where(eq(readings.id, id));
+    return res[0];
   }
 
-  createPages(readingPages: InsertPage[]): void {
+  async createPages(readingPages: InsertPage[]): Promise<void> {
     for (let i = 0; i < readingPages.length; i += 100) {
       const batch = readingPages.slice(i, i + 100);
-      db.insert(pages).values(batch).run();
+      await db.insert(pages).values(batch);
     }
   }
 
-  getPagesByReadingId(readingId: number): Page[] {
-    return db.select().from(pages).where(eq(pages.readingId, readingId)).all();
+  async getPagesByReadingId(readingId: number): Promise<Page[]> {
+    return await db.select().from(pages).where(eq(pages.readingId, readingId));
   }
 
-  getNextAvailablePage(readingId: number): Page | undefined {
-    return db.select().from(pages)
+  async getNextAvailablePage(readingId: number): Promise<Page | undefined> {
+    const res = await db.select().from(pages)
       .where(and(eq(pages.readingId, readingId), eq(pages.isRead, 0), sql`${pages.readerName} IS NULL`))
-      .limit(1)
-      .get();
+      .limit(1);
+
+    return res[0];
   }
 
-  markPageAsRead(pageId: number, readerName: string): Page | undefined {
-    db.update(pages)
+  async markPageAsRead(pageId: number, readerName: string): Promise<Page | undefined> {
+    const res = await db.update(pages)
       .set({ isRead: 1, readerName })
       .where(eq(pages.id, pageId))
-      .run();
+      .returning();
 
-    return db.select().from(pages).where(eq(pages.id, pageId)).get();
+    return res[0];
   }
 
-  getReadingStats(readingId: number): { total: number; read: number } {
-    const allPages = db.select().from(pages).where(eq(pages.readingId, readingId)).all();
+  async getReadingStats(readingId: number): Promise<{ total: number; read: number }> {
+    const allPages = await db.select().from(pages).where(eq(pages.readingId, readingId));
     const readPages = allPages.filter(p => p.isRead === 1);
-    return { total: allPages.length, read: readPages.length };
+
+    return {
+      total: allPages.length,
+      read: readPages.length
+    };
   }
 }
 
