@@ -1,12 +1,12 @@
 import { type Reading, type InsertReading, type Page, type InsertPage, readings, pages } from "@shared/schema";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { eq, and, sql } from "drizzle-orm";
 
-const sqlite = new Database("data.db");
-sqlite.pragma("journal_mode = WAL");
+const connectionString = process.env.DATABASE_URL!;
 
-export const db = drizzle(sqlite);
+export const client = postgres(connectionString);
+export const db = drizzle(client);
 
 export interface IStorage {
   createReading(reading: InsertReading & { totalPages: number }): Reading;
@@ -38,7 +38,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   createPages(readingPages: InsertPage[]): void {
-    // Insert in batches of 100
     for (let i = 0; i < readingPages.length; i += 100) {
       const batch = readingPages.slice(i, i + 100);
       db.insert(pages).values(batch).run();
@@ -61,6 +60,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isRead: 1, readerName })
       .where(eq(pages.id, pageId))
       .run();
+
     return db.select().from(pages).where(eq(pages.id, pageId)).get();
   }
 
