@@ -127,9 +127,11 @@ if (!existing) {
   console.log("Creating default reading...");
 
   storage.createReading({
-    slug: "default",
-    name: "קריאה ראשונה",
-  });
+  slug: "default",
+  title: "קריאה ראשונה",
+  organizerName: "מערכת",
+  totalPages: TOTAL_ZOHAR_PAGES,
+});
 
   console.log("Default reading created");
 }
