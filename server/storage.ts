@@ -56,7 +56,7 @@ export class DatabaseStorage implements IStorage {
     const res = await db
       .select()
       .from(readings)
-      .where(eq(readings.id, id)); // ✅ תיקון כאן
+      .where(eq(readings.id, id)); // ✅ תיקון
 
     return res[0];
   }
@@ -68,13 +68,16 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // ✅ התיקון הכי חשוב — סדר נכון
   async getPagesByReadingId(readingId: number): Promise<Page[]> {
     return await db
       .select()
       .from(pages)
-      .where(eq(pages.readingId, readingId));
+      .where(eq(pages.readingId, readingId))
+      .orderBy(pages.pageNumber);
   }
 
+  // ✅ גם כאן מוסיפים סדר
   async getNextAvailablePage(readingId: number): Promise<Page | undefined> {
     const res = await db
       .select()
@@ -86,6 +89,7 @@ export class DatabaseStorage implements IStorage {
           sql`${pages.readerName} IS NULL`
         )
       )
+      .orderBy(pages.pageNumber) // חשוב!
       .limit(1);
 
     return res[0];
@@ -101,7 +105,7 @@ export class DatabaseStorage implements IStorage {
         isRead: 1,
         readerName,
       })
-      .where(eq(pages.id, pageId)) // ✅ תיקון כאן
+      .where(eq(pages.id, pageId)) // ✅ תיקון
       .returning();
 
     return res[0];
