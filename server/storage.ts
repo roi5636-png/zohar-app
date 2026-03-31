@@ -1,10 +1,17 @@
-import { type Reading, type InsertReading, type Page, type InsertPage, readings, pages } from "@shared/schema";
+import {
+  type Reading,
+  type InsertReading,
+  type Page,
+  type InsertPage,
+  readings,
+  pages,
+} from "@shared/schema";
+
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq, and, sql } from "drizzle-orm";
 
 const connectionString = process.env.DATABASE_URL!;
-
 export const client = postgres(connectionString);
 export const db = drizzle(client);
 
@@ -20,25 +27,37 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-
-  async createReading(reading: InsertReading & { totalPages: number }): Promise<Reading> {
-    const res = await db.insert(readings).values({
-      slug: reading.slug,
-      title: reading.title,
-      organizerName: reading.organizerName,
-      totalPages: reading.totalPages,
-    }).returning();
+  async createReading(
+    reading: InsertReading & { totalPages: number }
+  ): Promise<Reading> {
+    const res = await db
+      .insert(readings)
+      .values({
+        slug: reading.slug,
+        title: reading.title,
+        organizerName: reading.organizerName,
+        totalPages: reading.totalPages,
+      })
+      .returning();
 
     return res[0];
   }
 
   async getReadingBySlug(slug: string): Promise<Reading | undefined> {
-    const res = await db.select().from(readings).where(eq(readings.slug, slug));
+    const res = await db
+      .select()
+      .from(readings)
+      .where(eq(readings.slug, slug));
+
     return res[0];
   }
 
   async getReadingById(id: number): Promise<Reading | undefined> {
-    const res = await db.select().from(readings).where(eq(readings.id, id));
+    const res = await db
+      .select()
+      .from(readings)
+      .where(eq(readings.id, id)); // ✅ תיקון כאן
+
     return res[0];
   }
 
@@ -50,33 +69,57 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPagesByReadingId(readingId: number): Promise<Page[]> {
-    return await db.select().from(pages).where(eq(pages.readingId, readingId));
+    return await db
+      .select()
+      .from(pages)
+      .where(eq(pages.readingId, readingId));
   }
 
   async getNextAvailablePage(readingId: number): Promise<Page | undefined> {
-    const res = await db.select().from(pages)
-      .where(and(eq(pages.readingId, readingId), eq(pages.isRead, 0), sql`${pages.readerName} IS NULL`))
+    const res = await db
+      .select()
+      .from(pages)
+      .where(
+        and(
+          eq(pages.readingId, readingId),
+          eq(pages.isRead, 0),
+          sql`${pages.readerName} IS NULL`
+        )
+      )
       .limit(1);
 
     return res[0];
   }
 
-  async markPageAsRead(pageId: number, readerName: string): Promise<Page | undefined> {
-    const res = await db.update(pages)
-      .set({ isRead: 1, readerName })
-      .where(eq(pages.id, pageId))
+  async markPageAsRead(
+    pageId: number,
+    readerName: string
+  ): Promise<Page | undefined> {
+    const res = await db
+      .update(pages)
+      .set({
+        isRead: 1,
+        readerName,
+      })
+      .where(eq(pages.id, pageId)) // ✅ תיקון כאן
       .returning();
 
     return res[0];
   }
 
-  async getReadingStats(readingId: number): Promise<{ total: number; read: number }> {
-    const allPages = await db.select().from(pages).where(eq(pages.readingId, readingId));
-    const readPages = allPages.filter(p => p.isRead === 1);
+  async getReadingStats(
+    readingId: number
+  ): Promise<{ total: number; read: number }> {
+    const allPages = await db
+      .select()
+      .from(pages)
+      .where(eq(pages.readingId, readingId));
+
+    const readPages = allPages.filter((p) => p.isRead === 1);
 
     return {
       total: allPages.length,
-      read: readPages.length
+      read: readPages.length,
     };
   }
 }
