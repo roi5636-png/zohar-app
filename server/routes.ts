@@ -18,8 +18,8 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // Create a new reading
-  app.post("/api/readings", (req, res) => {
+  // ✅ CREATE READING
+  app.post("/api/readings", async (req, res) => {
     try {
       const body = z.object({
         title: z.string().min(1),
@@ -28,7 +28,8 @@ export async function registerRoutes(
 
       const slug = generateSlug();
 
-      const reading = storage.createReading({
+      // ✅ FIX 1 — await
+      const reading = await storage.createReading({
         slug,
         title: body.title,
         organizerName: body.organizerName,
@@ -38,7 +39,7 @@ export async function registerRoutes(
       const zoharPages = generateZoharPages();
 
       const pageRecords = zoharPages.map(p => ({
-        readingId: reading.id,
+        readingId: reading.id, // ✅ FIX 2
         pageNumber: p.pageNumber,
         sefariaRef: p.sefariaRef,
         displayName: p.displayName,
@@ -47,48 +48,51 @@ export async function registerRoutes(
         isRead: 0,
       }));
 
-      storage.createPages(pageRecords);
+      // ✅ FIX 3 — await
+      await storage.createPages(pageRecords);
 
       res.json(reading);
+
     } catch (error: any) {
+      console.error("CREATE ERROR:", error); // חשוב ללוגים
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
-  // Get reading by slug
-  app.get("/api/readings/:slug", (req, res) => {
+  // ✅ GET READING
+  app.get("/api/readings/:slug", async (req, res) => {
     const { slug } = req.params;
 
     if (!slug || slug === "undefined") {
       return res.status(400).json({ error: "Invalid slug" });
     }
 
-    const reading = storage.getReadingBySlug(slug);
+    const reading = await storage.getReadingBySlug(slug);
 
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
 
-    const stats = storage.getReadingStats(reading.id);
+    const stats = await storage.getReadingStats(reading.id);
 
     res.json({ ...reading, stats });
   });
 
-  // Get next page
-  app.get("/api/readings/:slug/next-page", (req, res) => {
+  // ✅ NEXT PAGE
+  app.get("/api/readings/:slug/next-page", async (req, res) => {
     const { slug } = req.params;
 
     if (!slug || slug === "undefined") {
       return res.status(400).json({ error: "Invalid slug" });
     }
 
-    const reading = storage.getReadingBySlug(slug);
+    const reading = await storage.getReadingBySlug(slug);
 
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
 
-    const page = storage.getNextAvailablePage(reading.id);
+    const page = await storage.getNextAvailablePage(reading.id);
 
     if (!page) {
       return res.json({ complete: true, message: "כל הזוהר הושלם!" });
@@ -97,8 +101,8 @@ export async function registerRoutes(
     res.json(page);
   });
 
-  // Take page
-  app.post("/api/pages/:pageId/take", (req, res) => {
+  // ✅ TAKE PAGE
+  app.post("/api/pages/:pageId/take", async (req, res) => {
     try {
       const { pageId } = req.params;
 
@@ -110,20 +114,21 @@ export async function registerRoutes(
         readerName: z.string().min(1),
       }).parse(req.body);
 
-      const page = storage.markPageAsRead(Number(pageId), body.readerName);
+      const page = await storage.markPageAsRead(Number(pageId), body.readerName);
 
       if (!page) {
         return res.status(404).json({ error: "Page not found" });
       }
 
       res.json(page);
+
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
-  // Confirm page
-  app.post("/api/pages/:pageId/confirm", (req, res) => {
+  // ✅ CONFIRM PAGE
+  app.post("/api/pages/:pageId/confirm", async (req, res) => {
     try {
       const { pageId } = req.params;
 
@@ -135,19 +140,20 @@ export async function registerRoutes(
         readerName: z.string().min(1),
       }).parse(req.body);
 
-      const page = storage.markPageAsRead(Number(pageId), body.readerName);
+      const page = await storage.markPageAsRead(Number(pageId), body.readerName);
 
       if (!page) {
         return res.status(404).json({ error: "Page not found" });
       }
 
       res.json(page);
+
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
-  // Dashboard pages
+  // ✅ DASHBOARD
   app.get("/api/readings/:slug/pages", async (req, res) => {
     const { slug } = req.params;
 
@@ -155,33 +161,17 @@ export async function registerRoutes(
       return res.status(400).json({ error: "Invalid slug" });
     }
 
-    const reading = storage.getReadingBySlug(slug);
+    const reading = await storage.getReadingBySlug(slug);
 
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
 
-    const allPages = storage.getPagesByReadingId(reading.id);
-    const stats = storage.getReadingStats(reading.id);
+    const allPages = await storage.getPagesByReadingId(reading.id);
+    const stats = await storage.getReadingStats(reading.id);
 
     res.json({ reading, pages: allPages, stats });
   });
-
-  // default reading
-  const existing = storage.getReadingBySlug("default");
-
-  if (!existing) {
-    console.log("Creating default reading...");
-
-    storage.createReading({
-      slug: "default",
-      title: "קריאה ראשונה",
-      organizerName: "מערכת",
-      totalPages: TOTAL_ZOHAR_PAGES,
-    });
-
-    console.log("Default reading created");
-  }
 
   return httpServer;
 }
