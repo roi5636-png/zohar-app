@@ -27,6 +27,7 @@ export async function registerRoutes(
       }).parse(req.body);
 
       const slug = generateSlug();
+
       const reading = storage.createReading({
         slug,
         title: body.title,
@@ -34,8 +35,8 @@ export async function registerRoutes(
         totalPages: TOTAL_ZOHAR_PAGES,
       });
 
-      // Generate all Zohar pages for this reading
       const zoharPages = generateZoharPages();
+
       const pageRecords = zoharPages.map(p => ({
         readingId: reading.id,
         pageNumber: p.pageNumber,
@@ -54,86 +55,133 @@ export async function registerRoutes(
     }
   });
 
-  // Get reading by slug (public link)
+  // Get reading by slug
   app.get("/api/readings/:slug", (req, res) => {
-    const reading = storage.getReadingBySlug(req.params.slug);
+    const { slug } = req.params;
+
+    if (!slug || slug === "undefined") {
+      return res.status(400).json({ error: "Invalid slug" });
+    }
+
+    const reading = storage.getReadingBySlug(slug);
+
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
+
     const stats = storage.getReadingStats(reading.id);
+
     res.json({ ...reading, stats });
   });
 
-  // Get next available page for a reading
+  // Get next page
   app.get("/api/readings/:slug/next-page", (req, res) => {
-    const reading = storage.getReadingBySlug(req.params.slug);
+    const { slug } = req.params;
+
+    if (!slug || slug === "undefined") {
+      return res.status(400).json({ error: "Invalid slug" });
+    }
+
+    const reading = storage.getReadingBySlug(slug);
+
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
+
     const page = storage.getNextAvailablePage(reading.id);
+
     if (!page) {
       return res.json({ complete: true, message: "כל הזוהר הושלם!" });
     }
+
     res.json(page);
   });
 
-  // Take a page (assign to reader)
+  // Take page
   app.post("/api/pages/:pageId/take", (req, res) => {
     try {
+      const { pageId } = req.params;
+
+      if (!pageId || isNaN(Number(pageId))) {
+        return res.status(400).json({ error: "Invalid pageId" });
+      }
+
       const body = z.object({
         readerName: z.string().min(1),
       }).parse(req.body);
 
-      const page = storage.markPageAsRead(parseInt(req.params.pageId), body.readerName);
+      const page = storage.markPageAsRead(Number(pageId), body.readerName);
+
       if (!page) {
         return res.status(404).json({ error: "Page not found" });
       }
+
       res.json(page);
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
-  // Mark page as read (confirm reading)
+  // Confirm page
   app.post("/api/pages/:pageId/confirm", (req, res) => {
     try {
+      const { pageId } = req.params;
+
+      if (!pageId || isNaN(Number(pageId))) {
+        return res.status(400).json({ error: "Invalid pageId" });
+      }
+
       const body = z.object({
         readerName: z.string().min(1),
       }).parse(req.body);
 
-      const page = storage.markPageAsRead(parseInt(req.params.pageId), body.readerName);
+      const page = storage.markPageAsRead(Number(pageId), body.readerName);
+
       if (!page) {
         return res.status(404).json({ error: "Page not found" });
       }
+
       res.json(page);
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
 
-  // Dashboard: get all pages for a reading (organizer view)
+  // Dashboard pages
   app.get("/api/readings/:slug/pages", async (req, res) => {
-    const reading = storage.getReadingBySlug("default");
+    const { slug } = req.params;
+
+    if (!slug || slug === "undefined") {
+      return res.status(400).json({ error: "Invalid slug" });
+    }
+
+    const reading = storage.getReadingBySlug(slug);
+
     if (!reading) {
       return res.status(404).json({ error: "Reading not found" });
     }
+
     const allPages = storage.getPagesByReadingId(reading.id);
     const stats = storage.getReadingStats(reading.id);
+
     res.json({ reading, pages: allPages, stats });
   });
-const existing = storage.getReadingBySlug("default");
 
-if (!existing) {
-  console.log("Creating default reading...");
+  // default reading
+  const existing = storage.getReadingBySlug("default");
 
-  storage.createReading({
-  slug: "default",
-  title: "קריאה ראשונה",
-  organizerName: "מערכת",
-  totalPages: TOTAL_ZOHAR_PAGES,
-});
+  if (!existing) {
+    console.log("Creating default reading...");
 
-  console.log("Default reading created");
-}
+    storage.createReading({
+      slug: "default",
+      title: "קריאה ראשונה",
+      organizerName: "מערכת",
+      totalPages: TOTAL_ZOHAR_PAGES,
+    });
+
+    console.log("Default reading created");
+  }
+
   return httpServer;
 }
