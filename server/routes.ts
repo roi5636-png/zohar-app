@@ -28,7 +28,6 @@ export async function registerRoutes(
 
       const slug = generateSlug();
 
-      // ✅ FIX 1 — await
       const reading = await storage.createReading({
         slug,
         title: body.title,
@@ -36,10 +35,15 @@ export async function registerRoutes(
         totalPages: TOTAL_ZOHAR_PAGES,
       });
 
+      // 🛡️ הגנה קריטית
+      if (!reading || !reading.id) {
+        return res.status(500).json({ error: "Failed to create reading" });
+      }
+
       const zoharPages = generateZoharPages();
 
       const pageRecords = zoharPages.map(p => ({
-        readingId: reading.id, // ✅ FIX 2
+        readingId: reading.id,
         pageNumber: p.pageNumber,
         sefariaRef: p.sefariaRef,
         displayName: p.displayName,
@@ -48,13 +52,12 @@ export async function registerRoutes(
         isRead: 0,
       }));
 
-      // ✅ FIX 3 — await
       await storage.createPages(pageRecords);
 
       res.json(reading);
 
     } catch (error: any) {
-      console.error("CREATE ERROR:", error); // חשוב ללוגים
+      console.error("CREATE ERROR:", error);
       res.status(400).json({ error: error.message || "Invalid request" });
     }
   });
