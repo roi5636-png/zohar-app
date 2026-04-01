@@ -235,6 +235,7 @@
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
     inset: -1px;
   }
+}
 body {
-  background: #f5f1e8 !important;
+  background: #f5f1e8;
 }
