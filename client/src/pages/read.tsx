@@ -270,7 +270,7 @@ export default function ReadPage() {
 
             {/* Zohar text */}
           <Card 
-className="border border-[#d4af37] bg-gradient-to-b from-[#fff9e6] via-[#f8e7b5] to-[#f1d98a] shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-2xl border-opacity-80"
+className="border border-[#e5d7b2] bg-[#fdf8ea] rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
   data-testid="card-zohar-text"
 >
               <CardContent className="py-8 px-6">
