@@ -270,10 +270,10 @@ export default function ReadPage() {
 
             {/* Zohar text */}
           <Card 
-  className="border border-[#e6d3a3] bg-[#faf3e0] shadow-lg rounded-2xl"
+className="border border-[#d4af37] bg-gradient-to-b from-[#fff9e6] via-[#f8e7b5] to-[#f1d98a] shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-2xl border-opacity-80"
   data-testid="card-zohar-text"
 >
-              <CardContent className="py-6">
+              <CardContent className="py-8 px-6">
                 {textLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -284,7 +284,7 @@ export default function ReadPage() {
                     {zoharText.map((paragraph, i) => (
                       <p
                         key={i}
-                      className="mb-4 leading-loose text-[18px] text-[#3b2f1c]"
+                    className="mb-5 leading-8 text-[19px] text-[#3b2f1c] tracking-wide text-center"
                         dangerouslySetInnerHTML={{ __html: paragraph }}
                       />
                     ))}
