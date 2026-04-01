@@ -270,7 +270,7 @@ export default function ReadPage() {
 
             {/* Zohar text */}
           <Card 
-  className="border border-[#d4af37] bg-gradient-to-b from-[#fff8e7] to-[#f3e2b3] shadow-2xl rounded-2xl"
+  className="border border-[#e6d3a3] bg-[#faf3e0] shadow-lg rounded-2xl"
   data-testid="card-zohar-text"
 >
               <CardContent className="py-6">
@@ -284,7 +284,7 @@ export default function ReadPage() {
                     {zoharText.map((paragraph, i) => (
                       <p
                         key={i}
-                        className="mb-3 leading-loose"
+                      className="mb-4 leading-loose text-[18px] text-[#3b2f1c]"
                         dangerouslySetInnerHTML={{ __html: paragraph }}
                       />
                     ))}
