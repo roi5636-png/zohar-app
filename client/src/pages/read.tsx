@@ -269,7 +269,10 @@ export default function ReadPage() {
             </Card>
 
             {/* Zohar text */}
-            <Card className="border border-border" data-testid="card-zohar-text">
+          <Card 
+  className="border border-[#d4af37] bg-gradient-to-b from-[#fff8e7] to-[#f3e2b3] shadow-2xl rounded-2xl"
+  data-testid="card-zohar-text"
+>
               <CardContent className="py-6">
                 {textLoading ? (
                   <div className="flex items-center justify-center py-12">
